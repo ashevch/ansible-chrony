@@ -1,0 +1,27 @@
+---
+- name: Install Chrony
+  become: yes
+  yum: name=chrony state=present
+
+- name: Check if ntpd service exists
+  stat: path="/usr/lib/systemd/system/ntpd.service"
+  register: ntpd_service_status
+
+- name: Stop and mask ntpd service
+  systemd: name=ntpd state=stopped masked=yes
+  when: ntpd_service_status.stat.exists
+
+- name: Configure chrony 
+  template:
+    src: chrony.conf.j2
+    dest: "/etc/chrony.conf"
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+  become: true
+
+- name: restart chronyd
+  service:
+    name: chronyd
+    state: restarted
+  become: true
